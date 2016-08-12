@@ -23,7 +23,9 @@ read reposPath
 
 # checkout the project
 svn checkout -r$projectRevision $reposPath
-cd trunk
+
+subdir=`ls`
+cd $subdir
 path="/${PWD#*/}"
 echo $path
 

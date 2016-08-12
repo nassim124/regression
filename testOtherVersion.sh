@@ -23,9 +23,11 @@ read reposPath
 
 # checkout the project
 svn checkout -r$projectRevision $reposPath
-cd trunk
 
-
+subdir=`ls`
+cd $subdir
+path="/${PWD#*/}"
+echo $path
 
 # read failedTest file into a variable
 failedTest=`cat /udd/naliche/workspace/$projectName/failedTest.txt`
@@ -35,7 +37,6 @@ echo "$failedTest"
 mvn -fn \"-Dtest=$failedTest\" clean test
 
 # Search the failed tests in the maven surfire repport
-path="/${PWD#*/}"
 echo $path
 test=$(java -cp /udd/naliche/workspace/ SearchAllDir $path)
 
