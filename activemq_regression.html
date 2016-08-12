@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://markable.in/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://markable.in//static/css/style.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="https://markable.in/static/editor/css/view_file.css">
+  <link rel="stylesheet" type="text/css" href="https://markable.in/static/css/code.css">
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <p>(before regression)</p>
+<p>svn checkout -r1480731 https://svn.apache.org/repos/asf/activemq/trunk</p>
+<h2 id="trunkactivemq-brokersrcmainjavaorgapacheactivemqbrokerregionqueuejava">/trunk/activemq-broker/src/main/java/org/apache/activemq/broker/region/Queue.java</h2>
+<pre><code>        @Override
+        public void afterCommit() throws Exception {
+            <FONT COLOR="red" >LinkedList&lt;Transaction&gt; orderedWork = null;</FONT>
+            // use existing object to sync orderIndexUpdates that can be reassigned
+            synchronized (sendLock) {
+                <FONT COLOR="red" >if (transaction == orderIndexUpdates.peek()) {
+
+                <FONT COLOR="red" > </FONT>
+                    orderedWork = orderIndexUpdates;
+                    orderIndexUpdates = new LinkedList&lt;Transaction&gt;();
+
+                    // talking all the ordered work means that earlier
+                    // and later threads do nothing.
+                    // this avoids contention/race on the sendLock that
+                    // guards the actual work.</FONT>
+                }
+            }
+            // do the ordered work
+            if (orderedWork != null) {
+                sendLock.lockInterruptibly();
+                try {
+                    for (Transaction tx : orderedWork) {
+                        sendSyncs.get(tx).processSend();
+                    }
+                } finally {
+                    sendLock.unlock();
+                }
+                <FONT COLOR="red" >for (Transaction tx : orderedWork) {
+                    sendSyncs.get(tx).processSent();
+                }
+                sendSyncs.remove(transaction);</FONT>
+            }
+        }
+</code></pre>
+<hr />
+<p>(regressed version)</p>
+<p>svn checkout -r1482789 https://svn.apache.org/repos/asf/activemq/trunk</p>
+<h2 id="trunkactivemq-brokersrcmainjavaorgapacheactivemqbrokerregionqueuejava_1">/trunk/activemq-broker/src/main/java/org/apache/activemq/broker/region/Queue.java</h2>
+<pre><code>        @Override
+        public void afterCommit() throws Exception {
+            <FONT COLOR="red" >LinkedList&lt;Transaction&gt; orderedWork = new LinkedList&lt;Transaction&gt;();;</FONT>
+            // use existing object to sync orderIndexUpdates that can be reassigned
+            synchronized (sendLock) {
+                <FONT COLOR="red" >Transaction next = orderIndexUpdates.peek();
+                while( next!=null &amp;&amp; next.isCommitted() ) {
+                    orderedWork.addLast(orderIndexUpdates.removeFirst());
+                    next = orderIndexUpdates.peek();</FONT>
+                }
+            }
+            // do the ordered work
+            if (!orderedWork.isEmpty()) {
+                sendLock.lockInterruptibly();
+                try {
+                    for (Transaction tx : orderedWork) {
+                        sendSyncs.get(tx).processSend();
+                        <FONT COLOR="red" >sendSyncs.remove(tx);</FONT>
+                    }
+                } finally {
+                    sendLock.unlock();
+                }
+            }
+        }
+</code></pre>
+<p>//failed test:</p>
+<pre><code>/activemq-ra/target
+ List : [org.apache.activemq.ra.JmsXARollback2CxTransactionTest.txt, 
+         org.apache.activemq.ra.JmsXAQueueTransactionTest.txt]
+
+/activemq-stomp/target
+ List : [org.apache.activemq.transport.stomp.StompNIOSSLTest.txt, 
+         org.apache.activemq.transport.stomp.StompNIOTest.txt, 
+         org.apache.activemq.transport.stomp.StompSslAuthTest.txt, 
+         org.apache.activemq.transport.stomp.StompSslTest.txt, 
+         org.apache.activemq.transport.stomp.StompTest.txt]
+
+/activemq-broker/target
+ List : [org.apache.activemq.JmsQueueTransactionTest.txt]
+</code></pre>
+<p>//explication pourquoi la modification casse les tests</p>
+<pre><code>les classes StompNIOSSLTest, StompNIOTest, StompSslAuthTest, StompSslTest  etendent la classe StompTest
+
+        testTransactionCommit: ligne 842: assertNotNull("Should have received a message", message);
+        testTransactionRollback: ligne 876: assertNotNull(message);
+
+        message = null ???
+
+        TextMessage message = (TextMessage)consumer.receive(10000);
+
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        protected ActiveMQQueue queue;
+
+        ActiveMQQueue extends Queue
+</code></pre>
+<hr />
+<p>(corrected version)</p>
+<p>svn checkout -r1482794 https://svn.apache.org/repos/asf/activemq/trunk</p>
+<h2 id="activemq1482794trunkactivemq-brokersrcmainjavaorgapacheactivemqbrokerregionqueuejava">/activemq1482794/trunk/activemq-broker/src/main/java/org/apache/activemq/broker/region/Queue.java</h2>
+<pre><code>       @Override
+       public void afterCommit() throws Exception {
+           LinkedList&lt;Transaction&gt; orderedWork = new LinkedList&lt;Transaction&gt;();;
+           // use existing object to sync orderIndexUpdates that can be reassigned
+           synchronized (sendLock) {
+               Transaction next = orderIndexUpdates.peek();
+               while( next!=null &amp;&amp; next.isCommitted() ) {
+                   orderedWork.addLast(orderIndexUpdates.removeFirst());
+                   next = orderIndexUpdates.peek();
+               }
+           }
+           // do the ordered work
+           if (!orderedWork.isEmpty()) {
+               <FONT COLOR="red" >ArrayList&lt;SendSync&gt; syncs = new ArrayList&lt;SendSync&gt;(orderedWork.size());;</FONT>
+               sendLock.lockInterruptibly();
+               try {
+                   for (Transaction tx : orderedWork) {
+                       <FONT COLOR="red" >SendSync sync = sendSyncs.get(tx);
+                       sync.processSend();
+                       syncs.add(sync);
+                       sendSyncs.remove(tx);</FONT>
+                   }
+               } finally {
+                   sendLock.unlock();
+               }
+               <FONT COLOR="red" >
+               for (SendSync sync : syncs) {
+                   sync.processSent();
+               }</FONT>
+           }
+        }
+</code></pre>
+<p>//succeeded tests :</p>
+<pre><code>/activemq-ra/target
+ List : [org.apache.activemq.ra.JmsXARollback2CxTransactionTest.txt, 
+         org.apache.activemq.ra.JmsXAQueueTransactionTest.txt]
+
+/activemq-stomp/target
+ List : [org.apache.activemq.transport.stomp.StompNIOSSLTest.txt, 
+         org.apache.activemq.transport.stomp.StompNIOTest.txt, 
+         org.apache.activemq.transport.stomp.StompSslAuthTest.txt, 
+         org.apache.activemq.transport.stomp.StompSslTest.txt, 
+         org.apache.activemq.transport.stomp.StompTest.txt]
+
+/activemq-broker/target
+ List : [org.apache.activemq.JmsQueueTransactionTest.txt]
+</code></pre>
+<p>//explication pourquoi la modification casse les tests</p>
+    </div>
+  </div>
+</body>
+</html>
