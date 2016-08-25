@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2016.2.2)  25 AUG 2016 15:15
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2016.2.2)  25 AUG 2016 15:14
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**jackrabbit_regression.tex
-(./jackrabbit_regression.tex
+**activemq_regression.tex
+(./activemq_regression.tex
 LaTeX2e <2011/06/27>
 Babel <3.9k> and hyphenation patterns for 6 languages loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
@@ -194,28 +194,28 @@ Package: listings 2014/03/04 1.5c (Carsten Heinz)
 (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2014/03/04 1.5c listings language file
 )
-(./jackrabbit_regression.aux)
-\openout1 = `jackrabbit_regression.aux'.
+(./activemq_regression.aux)
+\openout1 = `activemq_regression.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 26.
-LaTeX Font Info:    ... okay on input line 26.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 26.
-LaTeX Font Info:    ... okay on input line 26.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 26.
-LaTeX Font Info:    ... okay on input line 26.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 26.
-LaTeX Font Info:    ... okay on input line 26.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 26.
-LaTeX Font Info:    ... okay on input line 26.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 26.
-LaTeX Font Info:    ... okay on input line 26.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 26.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 26.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 30.
+LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 30.
+LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 30.
+LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 30.
+LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 30.
+LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 30.
+LaTeX Font Info:    ... okay on input line 30.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 30.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 30.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    ... okay on input line 30.
 
 (/usr/share/texlive/texmf-dist/tex/latex/upquote/upquote.sty
 Package: upquote 2012/04/19 v1.3 upright-quote and grave-accent glyphs in verba
@@ -270,55 +270,35 @@ tim
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
 \c@lstlisting=\count106
-LaTeX Font Info:    Try loading font information for T1+zi4 on input line 34.
+LaTeX Font Info:    Try loading font information for T1+zi4 on input line 38.
 (/usr/share/texlive/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2013/06/09 T1/zi4 (Inconsolata)
 ) [1
 
-{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}] [2]
-LaTeX Font Info:    Try loading font information for TS1+zi4 on input line 159.
+{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}] [2
 
-
-(/usr/share/texlive/texmf-dist/tex/latex/inconsolata/ts1zi4.fd
-File: ts1zi4.fd 2013/06/07 Fontinst v1.933 font definitions for TS1/zi4.
-)
-Overfull \hbox (3.98055pt too wide) in paragraph at lines 177--179
-[][][][][][][][][][][][][][][][][]  
- []
-
-[3] [4
+] [3
 
 ]
-Overfull \hbox (3.98055pt too wide) in paragraph at lines 285--287
-[][][][][][][][][][][][][][][][][]  
- []
-
-[5]
-Overfull \hbox (3.98055pt too wide) in paragraph at lines 362--365
-[][][][][][][][][][][][][][][][][]  
- []
-
-[6
-
-] (./jackrabbit_regression.aux) ) 
+(./activemq_regression.aux) ) 
 Here is how much of TeX's memory you used:
- 3576 strings out of 494955
- 49974 string characters out of 6179232
- 196375 words of memory out of 5000000
- 6804 multiletter control sequences out of 15000+600000
- 5767 words of font info for 18 fonts, out of 8000000 for 9000
+ 3550 strings out of 494955
+ 49615 string characters out of 6179232
+ 187375 words of memory out of 5000000
+ 6782 multiletter control sequences out of 15000+600000
+ 5478 words of font info for 17 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 26i,6n,40p,249b,1584s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texlive/texmf-dist/fonts/enc/dvips
-/inconsolata/i4-ts1.enc}{/usr/share/texlive/texmf-dist/fonts/enc/dvips/inconsol
-ata/i4-t1-0.enc}{/usr/share/texlive/texmf-dist/fonts/enc/dvips/cm-super/cm-supe
-r-t1.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/inconsolata/Inconsol
-ata-zi4r.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfbx100
-0.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb>
-Output written on jackrabbit_regression.pdf (6 pages, 66037 bytes).
+ 26i,5n,40p,210b,1034s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texlive/texmf-dist/fonts/enc/dvips/inc
+onsolata/i4-t1-0.enc}{/usr/share/texlive/texmf-dist/fonts/enc/dvips/cm-super/cm
+-super-t1.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/inconsolata/Inc
+onsolata-zi4r.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sf
+bx1000.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfrm1000.
+pfb>
+Output written on activemq_regression.pdf (3 pages, 57035 bytes).
 PDF statistics:
- 40 PDF objects out of 1000 (max. 8388607)
- 28 compressed objects within 1 object stream
+ 28 PDF objects out of 1000 (max. 8388607)
+ 19 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
