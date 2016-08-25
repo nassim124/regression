@@ -1,6 +1,8 @@
 (before regression)
 
-svn checkout -r1382056 https://svn.apache.org/repos/asf/camel/trunk
+svn checkout -r
+
+svn checkout -r1376140 https://svn.apache.org/repos/asf/camel/trunk
 --------------------------------------------------------------------------------------------------------------------
 
 
@@ -13,7 +15,7 @@ svn checkout -r1382056 https://svn.apache.org/repos/asf/camel/trunk
 
 (regressed version)
 
-svn checkout -r1436982 https://svn.apache.org/repos/asf/camel/trunk
+svn checkout -r1382039 https://svn.apache.org/repos/asf/camel/trunk
 --------------------------------------------------------------------------------------------------------------------
 
 
@@ -31,5 +33,5 @@ svn checkout -r1436982 https://svn.apache.org/repos/asf/camel/trunk
 
 (before regression)
 
-svn checkout -r1438388 https://svn.apache.org/repos/asf/camel/trunk
+svn checkout -r1424437 https://svn.apache.org/repos/asf/camel/trunk
 --------------------------------------------------------------------------------------------------------------------
