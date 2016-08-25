@@ -10,6 +10,8 @@ read projectRevision
 
 # create workspace
 mkdir $projectName
+SourcePath="/${PWD#*/}"
+echo $SourcePath
 cd $projectName
 pwd
 
@@ -33,7 +35,7 @@ echo $path
 mvn -fn clean test
 
 # Search the failed tests in the maven surfire repport
-test=$(java -cp /udd/naliche/workspace/ SearchAllDir $path)
+test=$(java -cp $SourcePath SearchAllDir $path)
 
 
 # delete the .txt extension and separate tests with "," to put it as parameter in mvn test
@@ -41,7 +43,7 @@ test2=$(echo "$test" | sed -e 's/.txt/,/g')
 
 # output result in file and delete last ","
 value=`echo ${test2::-1}| tr -d "[:space:]"`
-echo $value >/udd/naliche/workspace/$projectName/failedTest.txt
-echo "find failed test on /udd/naliche/workspace/$projectName/failedTest.txt"
+echo $value >$SourcePath/$projectName/failedTest.txt
+echo "find failed test on $SourcePath/$projectName/failedTest.txt"
 
 #mvn -fn "$test2" clean test
