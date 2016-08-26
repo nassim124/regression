@@ -2,7 +2,7 @@
 
 
 (regressed version)
-svn checkout -r1126101 https://svn.apache.org/repos/asf/struts/struts2/trunk
+svn checkout https://svn.apache.org/repos/asf/struts/struts2/trunk@1126101
 -------------------------------------------------------------------------------------------------------------------------------
 --- struts/struts2/trunk/xwork-core/src/main/java/com/opensymphony/xwork2/DefaultActionProxy.java	2011/05/22 17:15:55	1126101
 
@@ -12,17 +12,16 @@ svn checkout -r1126101 https://svn.apache.org/repos/asf/struts/struts2/trunk
          return methodSpecified;
      }
 
+
+
 //failure:
 	Compilation error  with java1.5
 	compiler did not allow the @override annotation on java 1.5
 
 
 
-
-
-
 (corrected version)
-svn checkout -r1131592 https://svn.apache.org/repos/asf/struts/struts2/trunk
+svn checkout https://svn.apache.org/repos/asf/struts/struts2/trunk@1131592
 -------------------------------------------------------------------------------------------------------------------------------
 +++ struts/struts2/trunk/xwork-core/src/main/java/com/opensymphony/xwork2/DefaultActionProxy.java	2011/06/05 03:27:14	1131592
 

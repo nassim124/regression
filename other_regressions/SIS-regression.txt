@@ -1,7 +1,7 @@
 
 
 (Regressed version)
-svn chekcout -r1655171 https://svn.apache.org/repos/asf/sis/trunk
+svn checkout -r1655171 https://svn.apache.org/repos/asf/sis/trunk
 -----------------------------------------------------------------------------------------------------------
 /core/sis-build-helper/src/main/java/org/apache/sis/internal/taglet/InlineTaglet.java	(revision 1655171)
 
@@ -28,7 +28,7 @@ svn chekcout -r1655171 https://svn.apache.org/repos/asf/sis/trunk
 
 
 (Corrected version)
-svn chekcout -r1657632 https://svn.apache.org/repos/asf/sis/trunk
+svn checkout -r1657632 https://svn.apache.org/repos/asf/sis/trunk
 -----------------------------------------------------------------------------------------------------------
 /core/sis-build-helper/src/main/java/org/apache/sis/internal/taglet/InlineTaglet.java	(revision 1657632)
 
