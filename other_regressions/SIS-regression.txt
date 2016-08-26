@@ -1,0 +1,77 @@
+
+
+(Regressed version)
+svn chekcout -r1655171 https://svn.apache.org/repos/asf/sis/trunk
+-----------------------------------------------------------------------------------------------------------
+/core/sis-build-helper/src/main/java/org/apache/sis/internal/taglet/InlineTaglet.java	(revision 1655171)
+
+ private static synchronized Configuration getConfiguration() {
+      return ConfigurationImpl.getInstance();
+      .....
+ }
+
+ ....
+
+  static void printWarning(final SourcePosition position, final String message) {
+        final RootDoc root = getConfiguration().root;
+        ...
+        }
+
+
+
+//failure: 
+  Compilation failure:
+  cannot find symbol method getInstance() 
+  it works only with JDK6 and JDK7 not on JDK8
+
+
+
+
+(Corrected version)
+svn chekcout -r1657632 https://svn.apache.org/repos/asf/sis/trunk
+-----------------------------------------------------------------------------------------------------------
+/core/sis-build-helper/src/main/java/org/apache/sis/internal/taglet/InlineTaglet.java	(revision 1657632)
+
+
+ private static Configuration configuration;
+
+  /**
+   * Returns the root document, or {@code null} if none.
+   */
+  private static synchronized RootDoc getRootDoc() {
+      if (configuration == null) {
+          /*
+           * Try to invoke ConfigurationImpl.getInstance(), which exists on JDK6 and JDK7 but not on JDK8.
+           * If we fail, fallback on direct instantiation of ConfigurationImpl(), which is possible only
+           * in JDK8 (because the constructor is private on JDK6 and JDK7).
+           */
+          try {
+              configuration = (Configuration) ConfigurationImpl.class.getMethod("getInstance").invoke(null);
+          } catch (Exception e) { // ReflectiveOperationException on the JDK7 branch
+              try {
+                  configuration = ConfigurationImpl.class.newInstance();
+              } catch (Exception e2) { // ReflectiveOperationException on the JDK7 branch
+                  return null; // Allowed by this method contract.
+              }
+          }
+      }
+      return configuration.root;
+     }
+
+static void printWarning(final SourcePosition position, final String message) {
+        final RootDoc root = getRootDoc();
+
+        ....
+}
+
+
+
+}
+
+
+
+
+
+
+
+

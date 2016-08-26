@@ -1,9 +1,216 @@
 (before regression)
 
-svn checkout -r
-
 svn checkout -r1376140 https://svn.apache.org/repos/asf/camel/trunk
---------------------------------------------------------------------------------------------------------------------
+
+/components/camel-ftp/src/main/java/org/apache/camel/component/file/remote/SftpOperations.java
+-----------------------------------------------------------------------------------------------
+
+    public void changeCurrentDirectory(String path) throws GenericFileOperationFailedException {
+        LOG.trace("changeCurrentDirectory({})", path);
+        if (ObjectHelper.isEmpty(path)) {
+            return;
+        }
+ 
+        // must compact path so FTP server can traverse correctly
+        path = FileUtil.compactPath(path);
+ 
+        // not stepwise should change directory in one operation
+        if (!endpoint.getConfiguration().isStepwise()) {
+            doChangeDirectory(path);
+            return;
+        }
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+        // if it starts with the root path then a little special handling for that
+        if (FileUtil.hasLeadingSeparator(path)) {
+            // change to root path
+            doChangeDirectory(path.substring(0, 1));
+            path = path.substring(1);
+        }
+ 
+        // split into multiple dirs
+        final String[] dirs = path.split("/|\\\\");
+ 
+        if (dirs == null || dirs.length == 0) {
+            // path was just a relative single path
+            doChangeDirectory(path);
+            return;
+        }
+ 
+        // there are multiple dirs so do this in chunks
+        for (String dir : dirs) {
+            doChangeDirectory(dir);
+        }
+    }
+
+
+
+
+
+
+        @SuppressWarnings("unchecked")
+    private boolean retrieveFileToStreamInBody(String name, Exchange exchange) throws GenericFileOperationFailedException {
+        OutputStream os = null;
+ 
+        try {
+            os = new ByteArrayOutputStream();
+            GenericFile<ChannelSftp.LsEntry> target =
+                    (GenericFile<ChannelSftp.LsEntry>) exchange.getProperty(FileComponent.FILE_EXCHANGE_FILE);
+            ObjectHelper.notNull(target, "Exchange should have the " + FileComponent.FILE_EXCHANGE_FILE + " set");
+            target.setBody(os);
+ 
+            String remoteName = name;
+            String currentDir = null;
+            if (endpoint.getConfiguration().isStepwise()) {
+                // remember current directory
+                currentDir = getCurrentDirectory();
+ 
+                // change directory to path where the file is to be retrieved
+                // (must do this as some FTP servers cannot retrieve using absolute path)
+                String path = FileUtil.onlyPath(name);
+                if (path != null) {
+                    changeCurrentDirectory(path);
+                }
+                // remote name is now only the file name as we just changed directory
+                remoteName = FileUtil.stripPath(name);
+            }
+ 
+            // use input stream which works with Apache SSHD used for testing
+            InputStream is = channel.get(remoteName);
+            IOHelper.copyAndCloseInput(is, os);
+ 
+            // change back to current directory
+            if (endpoint.getConfiguration().isStepwise()) {
+                changeCurrentDirectory(currentDir);
+            }
+ 
+            return true;
+        } catch (IOException e) {
+            throw new GenericFileOperationFailedException("Cannot retrieve file: " + name, e);
+        } catch (SftpException e) {
+            throw new GenericFileOperationFailedException("Cannot retrieve file: " + name, e);
+        } finally {
+            IOHelper.close(os, "retrieve: " + name, LOG);
+ 
+ 
+ 
+        }
+    }
+ 
+ 
+    @SuppressWarnings("unchecked")
+    private boolean retrieveFileToFileInLocalWorkDirectory(String name, Exchange exchange) throws GenericFileOperationFailedException {
+        File temp;
+        File local = new File(endpoint.getLocalWorkDirectory());
+        OutputStream os;
+        GenericFile<ChannelSftp.LsEntry> file =
+                (GenericFile<ChannelSftp.LsEntry>) exchange.getProperty(FileComponent.FILE_EXCHANGE_FILE);
+        ObjectHelper.notNull(file, "Exchange should have the " + FileComponent.FILE_EXCHANGE_FILE + " set");
+        try {
+            // use relative filename in local work directory
+            String relativeName = file.getRelativeFilePath();
+ 
+            temp = new File(local, relativeName + ".inprogress");
+            local = new File(local, relativeName);
+ 
+            // create directory to local work file
+            local.mkdirs();
+ 
+            // delete any existing files
+            if (temp.exists()) {
+                if (!FileUtil.deleteFile(temp)) {
+                    throw new GenericFileOperationFailedException("Cannot delete existing local work file: " + temp);
+                }
+            }
+            if (local.exists()) {
+                if (!FileUtil.deleteFile(local)) {
+                    throw new GenericFileOperationFailedException("Cannot delete existing local work file: " + local);
+                }
+            }
+ 
+            // create new temp local work file
+            if (!temp.createNewFile()) {
+                throw new GenericFileOperationFailedException("Cannot create new local work file: " + temp);
+            }
+ 
+            // store content as a file in the local work directory in the temp handle
+            os = new FileOutputStream(temp);
+ 
+            // set header with the path to the local work file
+            exchange.getIn().setHeader(Exchange.FILE_LOCAL_WORK_PATH, local.getPath());
+        } catch (Exception e) {
+            throw new GenericFileOperationFailedException("Cannot create new local work file: " + local);
+        }
+ 
+ 
+        try {
+            // store the java.io.File handle as the body
+            file.setBody(local);
+ 
+            String remoteName = name;
+            String currentDir = null;
+            if (endpoint.getConfiguration().isStepwise()) {
+                // remember current directory
+                currentDir = getCurrentDirectory();
+ 
+                // change directory to path where the file is to be retrieved
+                // (must do this as some FTP servers cannot retrieve using absolute path)
+                String path = FileUtil.onlyPath(name);
+                if (path != null) {
+                    changeCurrentDirectory(path);
+                }
+                // remote name is now only the file name as we just changed directory
+                remoteName = FileUtil.stripPath(name);
+            }
+ 
+            channel.get(remoteName, os);
+ 
+            // change back to current directory
+            if (endpoint.getConfiguration().isStepwise()) {
+                changeCurrentDirectory(currentDir);
+            }
+ 
+        } catch (SftpException e) {
+            LOG.trace("Error occurred during retrieving file: {} to local directory. Deleting local work file: {}", name, temp);
+            // failed to retrieve the file so we need to close streams and delete in progress file
+            // must close stream before deleting file
+            IOHelper.close(os, "retrieve: " + name, LOG);
+            boolean deleted = FileUtil.deleteFile(temp);
+            if (!deleted) {
+                LOG.warn("Error occurred during retrieving file: " + name + " to local directory. Cannot delete local work file: " + temp);
+            }
+            throw new GenericFileOperationFailedException("Cannot retrieve file: " + name, e);
+        } finally {
+            IOHelper.close(os, "retrieve: " + name, LOG);
+ 
+ 
+ 
+ 
+ 
+        }
+ 
+        LOG.debug("Retrieve file to local work file result: true");
+ 
+        // operation went okay so rename temp to local after we have retrieved the data
+        LOG.trace("Renaming local in progress file from: {} to: {}", temp, local);
+        try {
+            if (!FileUtil.renameFile(temp, local, false)) {
+                throw new GenericFileOperationFailedException("Cannot rename local work file from: " + temp + " to: " + local);
+            }
+        } catch (IOException e) {
+            throw new GenericFileOperationFailedException("Cannot rename local work file from: " + temp + " to: " + local, e);
+        }
+ 
+        return true;
+    }
 
 
 
@@ -16,10 +223,220 @@ svn checkout -r1376140 https://svn.apache.org/repos/asf/camel/trunk
 (regressed version)
 
 svn checkout -r1382039 https://svn.apache.org/repos/asf/camel/trunk
---------------------------------------------------------------------------------------------------------------------
+
+/components/camel-ftp/src/main/java/org/apache/camel/component/file/remote/SftpOperations.java
+-----------------------------------------------------------------------------------------------
+
+private static final Pattern UP_DIR_PATTERN = Pattern.compile("/[^/]+");
+
+
+    public void changeCurrentDirectory(String path) throws GenericFileOperationFailedException {
+        LOG.trace("changeCurrentDirectory({})", path);
+        if (ObjectHelper.isEmpty(path)) {
+            return;
+        }
+ 
+        // must compact path so FTP server can traverse correctly
+        path = FileUtil.compactPath(path);
+ 
+        // not stepwise should change directory in one operation
+        if (!endpoint.getConfiguration().isStepwise()) {
+            doChangeDirectory(path);
+            return;
+        }
+        if (getCurrentDirectory().startsWith(path)) {
+            // use relative path
+            String p = getCurrentDirectory().substring(path.length());
+            if (p.length() == 0) {
+                return;
+            }
+            // the first character must be '/' and hence removed
+            path = UP_DIR_PATTERN.matcher(p).replaceAll("/..").substring(1);
+        }
+ 
+        // if it starts with the root path then a little special handling for that
+        if (FileUtil.hasLeadingSeparator(path)) {
+            // change to root path
+            doChangeDirectory(path.substring(0, 1));
+            path = path.substring(1);
+        }
+ 
+        // split into multiple dirs
+        final String[] dirs = path.split("/|\\\\");
+ 
+        if (dirs == null || dirs.length == 0) {
+            // path was just a relative single path
+            doChangeDirectory(path);
+            return;
+        }
+ 
+        // there are multiple dirs so do this in chunks
+        for (String dir : dirs) {
+            doChangeDirectory(dir);
+        }
+    }
 
 
 
+
+
+    @SuppressWarnings("unchecked")
+    private boolean retrieveFileToStreamInBody(String name, Exchange exchange) throws GenericFileOperationFailedException {
+        OutputStream os = null;
+        String currentDir = null;
+        try {
+            os = new ByteArrayOutputStream();
+            GenericFile<ChannelSftp.LsEntry> target =
+                    (GenericFile<ChannelSftp.LsEntry>) exchange.getProperty(FileComponent.FILE_EXCHANGE_FILE);
+            ObjectHelper.notNull(target, "Exchange should have the " + FileComponent.FILE_EXCHANGE_FILE + " set");
+            target.setBody(os);
+ 
+            String remoteName = name;
+ 
+            if (endpoint.getConfiguration().isStepwise()) {
+                // remember current directory
+                currentDir = getCurrentDirectory();
+ 
+                // change directory to path where the file is to be retrieved
+                // (must do this as some FTP servers cannot retrieve using absolute path)
+                String path = FileUtil.onlyPath(name);
+                if (path != null) {
+                    changeCurrentDirectory(path);
+                }
+                // remote name is now only the file name as we just changed directory
+                remoteName = FileUtil.stripPath(name);
+            }
+ 
+            // use input stream which works with Apache SSHD used for testing
+            InputStream is = channel.get(remoteName);
+            IOHelper.copyAndCloseInput(is, os);
+ 
+ 
+ 
+ 
+ 
+ 
+            return true;
+        } catch (IOException e) {
+            throw new GenericFileOperationFailedException("Cannot retrieve file: " + name, e);
+        } catch (SftpException e) {
+            throw new GenericFileOperationFailedException("Cannot retrieve file: " + name, e);
+        } finally {
+            IOHelper.close(os, "retrieve: " + name, LOG);
+            // change back to current directory if we changed directory
+            if (currentDir != null) {
+                changeCurrentDirectory(currentDir);
+            }
+        }
+    }
+
+
+
+        @SuppressWarnings("unchecked")
+    private boolean retrieveFileToFileInLocalWorkDirectory(String name, Exchange exchange) throws GenericFileOperationFailedException {
+        File temp;
+        File local = new File(endpoint.getLocalWorkDirectory());
+        OutputStream os;
+        GenericFile<ChannelSftp.LsEntry> file =
+                (GenericFile<ChannelSftp.LsEntry>) exchange.getProperty(FileComponent.FILE_EXCHANGE_FILE);
+        ObjectHelper.notNull(file, "Exchange should have the " + FileComponent.FILE_EXCHANGE_FILE + " set");
+        try {
+            // use relative filename in local work directory
+            String relativeName = file.getRelativeFilePath();
+ 
+            temp = new File(local, relativeName + ".inprogress");
+            local = new File(local, relativeName);
+ 
+            // create directory to local work file
+            local.mkdirs();
+ 
+            // delete any existing files
+            if (temp.exists()) {
+                if (!FileUtil.deleteFile(temp)) {
+                    throw new GenericFileOperationFailedException("Cannot delete existing local work file: " + temp);
+                }
+            }
+            if (local.exists()) {
+                if (!FileUtil.deleteFile(local)) {
+                    throw new GenericFileOperationFailedException("Cannot delete existing local work file: " + local);
+                }
+            }
+ 
+            // create new temp local work file
+            if (!temp.createNewFile()) {
+                throw new GenericFileOperationFailedException("Cannot create new local work file: " + temp);
+            }
+ 
+            // store content as a file in the local work directory in the temp handle
+            os = new FileOutputStream(temp);
+ 
+            // set header with the path to the local work file
+            exchange.getIn().setHeader(Exchange.FILE_LOCAL_WORK_PATH, local.getPath());
+        } catch (Exception e) {
+            throw new GenericFileOperationFailedException("Cannot create new local work file: " + local);
+        }
+        String currentDir = null;
+ 
+        try {
+            // store the java.io.File handle as the body
+            file.setBody(local);
+ 
+            String remoteName = name;
+ 
+            if (endpoint.getConfiguration().isStepwise()) {
+                // remember current directory
+                currentDir = getCurrentDirectory();
+ 
+                // change directory to path where the file is to be retrieved
+                // (must do this as some FTP servers cannot retrieve using absolute path)
+                String path = FileUtil.onlyPath(name);
+                if (path != null) {
+                    changeCurrentDirectory(path);
+                }
+                // remote name is now only the file name as we just changed directory
+                remoteName = FileUtil.stripPath(name);
+            }
+ 
+            channel.get(remoteName, os);
+ 
+ 
+ 
+ 
+ 
+ 
+        } catch (SftpException e) {
+            LOG.trace("Error occurred during retrieving file: {} to local directory. Deleting local work file: {}", name, temp);
+            // failed to retrieve the file so we need to close streams and delete in progress file
+            // must close stream before deleting file
+            IOHelper.close(os, "retrieve: " + name, LOG);
+            boolean deleted = FileUtil.deleteFile(temp);
+            if (!deleted) {
+                LOG.warn("Error occurred during retrieving file: " + name + " to local directory. Cannot delete local work file: " + temp);
+            }
+            throw new GenericFileOperationFailedException("Cannot retrieve file: " + name, e);
+        } finally {
+            IOHelper.close(os, "retrieve: " + name, LOG);
+ 
+            // change back to current directory if we changed directory
+            if (currentDir != null) {
+                changeCurrentDirectory(currentDir);
+            }
+        }
+ 
+        LOG.debug("Retrieve file to local work file result: true");
+ 
+        // operation went okay so rename temp to local after we have retrieved the data
+        LOG.trace("Renaming local in progress file from: {} to: {}", temp, local);
+        try {
+            if (!FileUtil.renameFile(temp, local, false)) {
+                throw new GenericFileOperationFailedException("Cannot rename local work file from: " + temp + " to: " + local);
+            }
+        } catch (IOException e) {
+            throw new GenericFileOperationFailedException("Cannot rename local work file from: " + temp + " to: " + local, e);
+        }
+ 
+        return true;
+    }
 
 
 
@@ -34,4 +451,54 @@ svn checkout -r1382039 https://svn.apache.org/repos/asf/camel/trunk
 (before regression)
 
 svn checkout -r1424437 https://svn.apache.org/repos/asf/camel/trunk
---------------------------------------------------------------------------------------------------------------------
+
+/components/camel-ftp/src/main/java/org/apache/camel/component/file/remote/SftpOperations.java
+-----------------------------------------------------------------------------------------------
+
+
+    public void changeCurrentDirectory(String path) throws GenericFileOperationFailedException {
+        LOG.trace("changeCurrentDirectory({})", path);
+        if (ObjectHelper.isEmpty(path)) {
+            return;
+        }
+ 
+        // must compact path so SFTP server can traverse correctly, make use of the '/'
+        // separator because JSch expects this as the file separator even on Windows
+        path = FileUtil.compactPath(path, '/');
+ 
+        // not stepwise should change directory in one operation
+        if (!endpoint.getConfiguration().isStepwise()) {
+            doChangeDirectory(path);
+            return;
+        }
+        if (getCurrentDirectory().startsWith(path)) {
+            // use relative path
+            String p = getCurrentDirectory().substring(path.length());
+            if (p.length() == 0) {
+                return;
+            }
+            // the first character must be '/' and hence removed
+            path = UP_DIR_PATTERN.matcher(p).replaceAll("/..").substring(1);
+        }
+ 
+        // if it starts with the root path then a little special handling for that
+        if (FileUtil.hasLeadingSeparator(path)) {
+            // change to root path
+            doChangeDirectory(path.substring(0, 1));
+            path = path.substring(1);
+        }
+ 
+        // split into multiple dirs
+        final String[] dirs = path.split("/|\\\\");
+ 
+        if (dirs == null || dirs.length == 0) {
+            // path was just a relative single path
+            doChangeDirectory(path);
+            return;
+        }
+ 
+        // there are multiple dirs so do this in chunks
+        for (String dir : dirs) {
+            doChangeDirectory(dir);
+        }
+    }
